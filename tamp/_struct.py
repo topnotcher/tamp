@@ -4,7 +4,7 @@ from collections import OrderedDict
 
 from ._base import _Type, DataType
 
-__all__ = ['Structure', 'Const']
+__all__ = ['Structure', 'Const', 'Computed']
 
 class _StructType(_Type):
     def __new__(mcs, name, bases, attrs):
@@ -50,8 +50,8 @@ class Structure(DataType, metaclass=_StructType):
     _fields_ = []
 
     def __init__(self, *args, **kwargs):
-
         self.__dict__['_struct_fields'] = OrderedDict()
+        self._unpacked_callbacks = []
 
         for field, field_type in self._cls_iter_fields():
             self.__dict__['_struct_fields'][field] = field_type(parent=self)
@@ -86,10 +86,19 @@ class Structure(DataType, metaclass=_StructType):
             offset += consumed_bytes
             total_consumed_bytes += consumed_bytes
 
+        self._unpacked()
+
         return total_consumed_bytes
 
     def pack(self):
         return bytes(self)
+
+    def _unpacked(self):
+        for cb in self._unpacked_callbacks:
+            cb(self)
+
+    def add_unpacked_callback(self, cb):
+        self._unpacked_callbacks.append(cb)
 
     def __bytes__(self):
         return b''.join(bytes(field) for _, field in self._iter_fields())
@@ -214,3 +223,55 @@ class Const(DataType):
 
     def pack(self):
         return self._bytes_value
+
+
+@wrap_type
+class Computed(DataType):
+    """
+    Compute the value of a field based on the value of other fields::
+
+        class Foo(Structure):
+            _fields_ = [
+                ('foo', uint8_t),
+                ('bar', uint8_t),
+                ('baz', Computed(uint8_t, 'calc_baz')),
+            ]
+
+            def calc_baz(self):
+                return self.foo + self.bar
+    """
+    def __init__(self, pack_type, callback, mismatch_exc=ValueError, **kwargs):
+        self.pack_field = pack_type(**kwargs)
+        DataType.__init__(self, **kwargs)
+
+        self.callback = getattr(self._parent, callback)
+        self.mismatch_exc_type = mismatch_exc
+        kwargs.get('parent').add_unpacked_callback(self._parent_unpacked)
+
+    def _parent_unpacked(self, _):
+        value = self.callback()
+
+        if value != self.pack_field.value:
+            raise self.mismatch_exc_type('Unpacked Value %r does not match computed value %r.' %
+                                         (self.pack_field.value, value))
+
+    @DataType.value.setter
+    def value(self, new_value):
+        # TODO: this is horrible.
+        if new_value is not None:
+            raise TypeError('Computed fields cannot be set.')
+
+    @value.getter
+    def value(self):
+        self.pack_field.value = self.callback()
+        return self.pack_field.value
+
+    def unpack(self, buf, offset=0):
+        return self.pack_field.unpack(buf, offset)
+
+    def pack(self):
+        self.pack_field.value = self.callback()
+        return self.pack_field.pack()
+
+    def size(self):
+        return self.pack_field.size()

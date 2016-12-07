@@ -144,6 +144,25 @@ class TestStruct(unittest.TestCase):
         # TODO: test that the fields copy!
         t.test2 = _test1()
 
+    def test_unpack_callback(self):
+        """
+        A structure calls its unpacked callbacks after unpacking all fields.
+        """
+        def _cb1(s):
+            s.test = 1
+
+        def _cb2(s):
+            s.test += 2
+
+        s = _test_field_struct(uint8_t)
+        s.add_unpacked_callback(_cb1)
+        s.add_unpacked_callback(_cb2)
+
+        s.unpack(b'\x08')
+        self.assertEqual(s.test, 3)
+
+
+class ConstFieldTests(unittest.TestCase):
     def test_const_bytes_unpack(self):
         """
         Const bytes can unpack properly.
@@ -195,6 +214,86 @@ class TestStruct(unittest.TestCase):
 
         with self.assertRaises(ValueError):
             s.from_bytes(bytes(int8_t(value=-4)))
+
+
+class ComputedFieldTests(unittest.TestCase):
+
+    def setUp(self):
+        class _test(Structure):
+            _fields_ = [
+                ('bar', uint8_t),
+                ('foo', Computed(uint16_t, '_calc_foo'))
+            ]
+
+            def _calc_foo(self):
+                return self.bar + 1
+
+        self.s = _test()
+
+    def test_computed_value(self):
+        """
+        The value of a computed field is the computed value.
+        """
+        self.s.bar = 1
+        self.assertEqual(self.s.foo, 2)
+        self.s.bar = 2
+        self.assertEqual(self.s.foo, 3)
+
+    def test_computed_pack(self):
+        """
+        A computed field packs to the computed value.
+        """
+        self.s.bar = 5
+        self.assertEqual(bytes(self.s), b'\x05\x06\x00')
+
+    def test_computed_readonly(self):
+        """
+        A computed field is readonly.
+        """
+        with self.assertRaises(TypeError):
+            self.s.foo = 1
+
+    def test_computed_size(self):
+        """
+        A computed field's size is the size of the field type.
+        """
+        self.assertEqual(self.s.size(), 3)
+
+    def test_computed_unpack(self):
+        """
+        A computed field unpacks without error when the values match.
+        """
+        self.s.unpack(b'\x05\x06\x00')
+
+    def test_computed_unpack_invalid_default(self):
+        """
+        Value Error is raised (by deafault) when a computed field's unpacked
+        value does not match the computed value.
+        """
+        with self.assertRaises(ValueError):
+            self.s.unpack(b'\x05\x07\x00')
+
+    def test_computed_unpack_invalid(self):
+        """
+        The specified exception type when a computed field's unpacked value
+        does not match the computed value.
+        """
+        class ChecksumMismatchError(ValueError):
+            pass
+
+        class _test(Structure):
+            _fields_ = [
+                ('bar', uint8_t),
+                ('foo', Computed(uint16_t, '_calc_foo', mismatch_exc=ChecksumMismatchError))
+            ]
+
+            def _calc_foo(self):
+                return self.bar + 1
+
+        s = _test()
+
+        with self.assertRaises(ChecksumMismatchError):
+            s.unpack(b'\x05\x07\x00')
 
 
 def _test_field_struct(field_type, field_name='test'):
