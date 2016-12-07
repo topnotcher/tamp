@@ -288,6 +288,73 @@ class TestArray(unittest.TestCase):
         #self.assertEqual(s.data, [0, 1, 2, 3, 4])
 
 
+class PackedLengthTests(unittest.TestCase):
+    def setUp(self):
+        self.end = 77
+        self.data = [1, 2, 3, 4]
+        self.data_packed = bytes(uint32_t[len(self.data)](value=self.data))
+        self.dsize = len(self.data_packed)
+        self.dsize_packed = bytes(uint8_t(value=self.dsize))
+        self.end_packed = bytes(uint32_t(value=self.end))
+
+        # TODO: Implicitly testing using a structure as the packed length field.
+        # Should be a separate case
+
+        class _inner(Structure):
+            # Variable length array will normally consume all the bytes
+            _fields_ = [
+                ('data', uint32_t[0]),
+            ]
+
+
+        class _struct(Structure):
+            _fields_ = [
+                ('dsize', uint8_t),
+
+                ('inner', PackedLength(_inner, 'dsize')),
+                ('end', Const(uint32_t, self.end)),
+            ]
+
+        self.s = _struct()
+
+    def test_packed_length_unpack(self):
+        """
+        A PackedLength field determines how many bytes the target field unpacks.
+        """
+        s = self.s
+        s.unpack(self.dsize_packed + self.data_packed + self.end_packed)
+
+        self.assertEqual(s.dsize, self.dsize)
+        self.assertEqual(s.inner.data, self.data)
+        self.assertEqual(s.end, self.end)
+
+    def test_packed_length_updates(self):
+        """
+        The length field for a PackedLength field updates based on the ...
+        other field.
+        """
+        # This is an interesting case: "inner" is updated; "s" is not...
+        self.s.inner.data = [1, 2, 3, 4, 5, 6]
+
+        self.assertEqual(self.s.dsize, len(bytes(uint32_t[len(self.s.inner.data)](value=self.s.inner.data))))
+
+    def test_packed_length_pack(self):
+        """
+        A PackedLength field packs correctly.
+        """
+        self.s.inner.data = self.data
+        self.s.end = self.end
+
+        self.assertEqual(bytes(self.s), self.dsize_packed + self.data_packed + self.end_packed)
+
+    def test_packed_length_read_only(self):
+        """
+        The length field for a PackedLength is read only.
+        """
+        with self.assertRaises(TypeError):
+            self.s.dsize = 1
+
+
 def _test_field_struct(field_type):
     class _test(Structure):
         _fields_ = [
