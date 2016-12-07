@@ -1,9 +1,10 @@
 import inspect
+import functools
 from collections import OrderedDict
 
 from ._base import _Type, DataType
 
-__all__ =  ['Structure']
+__all__ = ['Structure', 'Const']
 
 class _StructType(_Type):
     def __new__(mcs, name, bases, attrs):
@@ -19,10 +20,10 @@ class _StructType(_Type):
             del attrs['_fields_']
 
         for field_name, field_type in fields:
-            if inspect.isclass(field_type) and issubclass(field_type, DataType):
-                attrs['_struct_type_fields_'].append((field_name, field_type))
-            else:
-                raise ValueError('Invalid type %r for field %s.' % (field_type, field_name))
+            # if inspect.isclass(field_type) and issubclass(field_type, DataType):
+            attrs['_struct_type_fields_'].append((field_name, field_type))
+            # else:
+            #     raise ValueError('Invalid type %r for field %s.' % (field_type, field_name))
 
         return _Type.__new__(mcs, name, bases, attrs)
 
@@ -163,3 +164,53 @@ class Structure(DataType, metaclass=_StructType):
                     return False
 
             return True
+
+
+def wrap_type(cls):
+    def _wrapper(*wrap_args, **wrap_kwargs):
+        # The downside of this is the result is not subscriptable. But why
+        # would you need an array of consts? (rather than a Const array)?
+        return functools.partial(cls, *wrap_args, **wrap_kwargs)
+
+    return _wrapper
+
+
+@wrap_type
+class Const(DataType):
+    def __init__(self, *args, **kwargs):
+        """
+        Const(type, value) | Const(value)
+        """
+        if isinstance(args[0], bytes):
+            bytes_value = args[0]
+            real_value = args[0]
+
+        elif inspect.isclass(args[0]) and issubclass(args[0], DataType):
+            type_value = args[0](value=args[1])
+
+            bytes_value = bytes(type_value)
+            real_value = type_value.value
+
+        else:
+            raise ValueError
+
+        self._value = real_value
+        self._bytes_value = bytes_value
+        DataType.__init__(self, value=real_value, **kwargs)
+
+    @DataType.value.setter
+    def value(self, new_value):
+        # TODO: this is horrible.
+        if new_value != self._value:
+            raise TypeError('Constant')
+
+    def unpack(self, buf, offset=0):
+        value = buf[offset:offset + len(self._bytes_value)]
+
+        if value != self._bytes_value:
+            raise ValueError('Value does not match expected constant.')
+
+        return len(self._bytes_value)
+
+    def pack(self):
+        return self._bytes_value

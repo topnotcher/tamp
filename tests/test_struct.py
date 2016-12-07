@@ -144,6 +144,58 @@ class TestStruct(unittest.TestCase):
         # TODO: test that the fields copy!
         t.test2 = _test1()
 
+    def test_const_bytes_unpack(self):
+        """
+        Const bytes can unpack properly.
+        """
+        s = _test_field_struct(Const(b'12345'))
+        s.from_bytes(b'12345')
+
+        self.assertEqual(s.test, b'12345')
+
+    def test_const_field_type_unpack(self):
+        """
+        Const field/type can unpack properly
+        """
+        s = _test_field_struct(Const(int8_t, -5))
+        s.from_bytes(bytes(int8_t(value=-5)))
+
+        self.assertEqual(s.test, -5)
+
+    def test_const_bytes_pack(self):
+        """
+        Const bytes can pack properly.
+        """
+        s = _test_field_struct(Const(b'12345'))
+
+        self.assertEqual(bytes(s), b'12345')
+
+    def test_const_field_type_pack(self):
+        """
+        Const field/type can pack properly
+        """
+        s = _test_field_struct(Const(int8_t, -5))
+
+        self.assertEqual(bytes(s), bytes(int8_t(value=-5)))
+
+    def test_const_bytes_unpack_value_error(self):
+        """
+        A const bytes field raises ValueError if the unpacked value does not match.
+        """
+        s = _test_field_struct(Const(b'12345'))
+
+        with self.assertRaises(ValueError):
+            s.from_bytes(b'12340')
+
+    def test_const_field_type_unpack_value_error(self):
+        """
+        A const field/type field raises ValueError if the unpacked value does not match.
+        """
+        s = _test_field_struct(Const(int8_t, -5))
+
+        with self.assertRaises(ValueError):
+            s.from_bytes(bytes(int8_t(value=-4)))
+
 
 def _test_field_struct(field_type, field_name='test'):
     class _test(Structure):

@@ -1,3 +1,6 @@
+import inspect
+
+
 class _Type(type): # yo dawg, I heard you like types.types
 
     def __getitem__(cls, key):
