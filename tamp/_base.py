@@ -93,12 +93,6 @@ class _ArrayLengthWrapper:
         self.args = args
         self.kwargs = kwargs
 
-    def __call__(self, parent, elem_type):
-        args = [parent, elem_type]
-        args.extend(self.args)
-
-        return self.cls(*args, **self.kwargs)
-
 
 class _Array(DataType):
     def __init__(self, elem_type, *args, **kwargs):
