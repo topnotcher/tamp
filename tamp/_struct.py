@@ -43,7 +43,7 @@ class Structure(DataType, metaclass=_StructType):
 
         t.foo = 129  # TypeError: can't fit in ``int8_t``
 
-        t.unpack(b'\x0F')
+        t.unpack(b'\\x0F')
 
         t.foo == 15  # True
     """
