@@ -199,20 +199,25 @@ class ConstFieldTests(unittest.TestCase):
 
     def test_const_bytes_unpack_value_error(self):
         """
-        A const bytes field raises ValueError if the unpacked value does not match.
+        A const bytes field raises ValueError by default if the unpacked value
+        does not match.
         """
         s = _test_field_struct(Const(b'12345'))
 
         with self.assertRaises(ValueError):
             s.from_bytes(b'12340')
 
-    def test_const_field_type_unpack_value_error(self):
+    def test_const_field_type_unpack_custom_error(self):
         """
-        A const field/type field raises ValueError if the unpacked value does not match.
+        A const field/type field raises a custom exception type if the unpacked
+        value does not match.
         """
-        s = _test_field_struct(Const(int8_t, -5))
+        class HotSauceException(ValueError):
+            pass
 
-        with self.assertRaises(ValueError):
+        s = _test_field_struct(Const(int8_t, -5, mismatch_exc=HotSauceException))
+
+        with self.assertRaises(HotSauceException):
             s.from_bytes(bytes(int8_t(value=-4)))
 
 

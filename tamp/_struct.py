@@ -186,7 +186,7 @@ def wrap_type(cls):
 
 @wrap_type
 class Const(DataType):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, mismatch_exc=ValueError, **kwargs):
         """
         Const(type, value) | Const(value)
         """
@@ -205,6 +205,7 @@ class Const(DataType):
 
         self._value = real_value
         self._bytes_value = bytes_value
+        self.mismatch_exc = mismatch_exc
         DataType.__init__(self, value=real_value, **kwargs)
 
     @DataType.value.setter
@@ -217,7 +218,7 @@ class Const(DataType):
         value = buf[offset:offset + len(self._bytes_value)]
 
         if value != self._bytes_value:
-            raise ValueError('Value does not match expected constant.')
+            raise self.mismatch_exc('Value does not match expected constant.')
 
         return len(self._bytes_value)
 
