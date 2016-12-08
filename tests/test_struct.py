@@ -220,6 +220,22 @@ class ConstFieldTests(unittest.TestCase):
         with self.assertRaises(HotSauceException):
             s.from_bytes(bytes(int8_t(value=-4)))
 
+    def test_const_bytes_size(self):
+        """
+        A const bytes field's size is the size of the const bytes.
+        """
+        s = _test_field_struct(Const(b'12345'))
+        self.assertEqual(s.size(), 5)
+
+        #s = _test_field_struct(Const(b'12345'))
+
+    def test_const_field_type_size(self):
+        """
+        A const field's size is the size of the field type.
+        """
+        s = _test_field_struct(Const(uint32_t[2], [1, 2]))
+        self.assertEqual(s.size(), 8)
+
 
 class ComputedFieldTests(unittest.TestCase):
 

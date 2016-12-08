@@ -225,6 +225,9 @@ class Const(DataType):
     def pack(self):
         return self._bytes_value
 
+    def size(self):
+        return len(self._bytes_value)
+
 
 @wrap_type
 class Computed(DataType):
