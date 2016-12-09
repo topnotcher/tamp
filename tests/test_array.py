@@ -92,13 +92,6 @@ class TestArray(unittest.TestCase):
 
         self.assertEqual(unpacked.value, list(buf))
 
-    def test_array_unpack_offset(self):
-        """
-        An array can unpack at an offset.
-        """
-        field = uint8_t[0]()
-
-
     def test_variable_length_array_pack(self):
         """
         Variable length array members should pack all  the things.

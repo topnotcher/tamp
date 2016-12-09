@@ -47,11 +47,10 @@ class DataType(metaclass=_Type):
     def value(self, new_value):
         self._value = new_value  # TODO: this allows defaults.
 
-    def unpack(self, buf, offset=0):
+    def unpack(self, buf):
         """
-        unpack bytes from the given ``buf`` starting at ``offset`` into
-        ``self.value``. ``ValueError`` should be raised if too few bytes are
-        given.
+        unpack bytes from the given ``buf`` into ``self.value``. ``ValueError``
+        should be raised if too few bytes are given.
         """
         raise NotImplementedError
 
@@ -62,15 +61,14 @@ class DataType(metaclass=_Type):
         """
         raise NotImplementedError
 
-    def from_bytes(self, buf, offset=0):
+    def from_bytes(self, buf):
         """
         Like unpack, but raises ``ValueError`` if fewer than ``len(buf)`` bytes are consumed.
         """
-        consumed_bytes = self.unpack(buf, offset)
-        rest_length = len(buf) - offset
+        consumed_bytes = self.unpack(buf)
 
-        if consumed_bytes != rest_length:
-            raise ValueError('Must consume exactly %d bytes; consumed %d.' % (rest_length, consumed_bytes))
+        if consumed_bytes != len(buf):
+            raise ValueError('Must consume exactly %d bytes; consumed %d.' % (len(buf), consumed_bytes))
 
     def __bytes__(self):
         return self.pack()
@@ -105,15 +103,15 @@ class _Array(DataType):
     def unpack_more(self, values, consumed, buf, offset):
         raise NotImplementedError
 
-    def _unpack(self, buf, offset=0):
+    def _unpack(self, buf):
         elem = self.elem_type()
+        offset = 0
 
-        unpack_more = (len(buf) - offset) > 0
         total_consumed_bytes = 0
         values = []
 
         while self.unpack_more(values, total_consumed_bytes, buf, offset) and offset < len(buf):
-            consumed_bytes = elem.unpack(buf, offset)
+            consumed_bytes = elem.unpack(buf[offset:])
             offset += consumed_bytes
             total_consumed_bytes += consumed_bytes
 
@@ -121,8 +119,8 @@ class _Array(DataType):
 
         return total_consumed_bytes, values
 
-    def unpack(self, buf, offset=0):
-        total_consumed_bytes, values = self._unpack(buf, offset=offset)
+    def unpack(self, buf):
+        total_consumed_bytes, values = self._unpack(buf)
         self._check_length(values)
 
         self._value = values

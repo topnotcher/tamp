@@ -27,7 +27,6 @@ class TestIntTypes(unittest.TestCase):
             self._test_int_bounds(test_type, bits, signed)
             self._test_int_pack_unpack(test_type, bits, fmt)
             self._test_int_size(test_type, bits)
-            self._test_int_offset(test_type, bits, fmt)
 
         self.assertEqual(getattr(field_type, 'le'), field_type)
 
@@ -137,19 +136,6 @@ class TestIntTypes(unittest.TestCase):
 
         with self.assertRaises(TypeError):
             f = field_type(min_val - 1)
-
-    def _test_int_offset(self, field_type, bits, fmt):
-        """
-        This sort of tests unpacking at an offset.
-        """
-        size = bits // 8
-        value = 13
-        offset = 12
-        packed = b'\x99' * offset + struct.pack(fmt, value)
-
-        field = field_type()
-        field.unpack(packed, offset=offset)
-        self.assertEqual(value, field.value)
 
 
 def _test_field_struct(field_type):

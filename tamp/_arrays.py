@@ -19,8 +19,8 @@ class _LengthFieldWrapper(DataType):
     def value(self, _):
         raise TypeError('Cannot manually set length on legnth field.')
 
-    def unpack(self, buf, offset=0):
-        return self.field.unpack(buf, offset=offset)
+    def unpack(self, buf):
+        return self.field.unpack(buf)
 
     def pack(self):
         return self.field.pack()
@@ -78,8 +78,8 @@ class _PackedLengthFieldWrapper(DataType):
     def value(self, _):
         raise TypeError('Cannot manually set length on legnth field.')
 
-    def unpack(self, buf, offset=0):
-        return self.length_field.unpack(buf, offset=offset)
+    def unpack(self, buf):
+        return self.length_field.unpack(buf)
 
     def pack(self):
         self._update_length()
@@ -114,9 +114,9 @@ class PackedLength(DataType):
 
         DataType.__init__(self, **kwargs)
 
-    def unpack(self, buf, offset=0):
+    def unpack(self, buf):
         unpack_size = self.length_field.value
-        consumed = self.wrapped_field.unpack(buf[offset : offset + unpack_size])
+        consumed = self.wrapped_field.unpack(buf[:unpack_size])
 
         if consumed != unpack_size:
             raise ValueError('Expected to unpack %d bytes; unpacked %d.' % (unpack_size, consumed))

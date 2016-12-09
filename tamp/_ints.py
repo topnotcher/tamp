@@ -44,11 +44,11 @@ class _Int(DataType, metaclass=_IntType):
     def _fmt(cls):
         return cls._endian_ + cls._fmt_
 
-    def unpack(self, buf, offset=0):
-        if len(buf) - offset < self.size():
+    def unpack(self, buf):
+        if len(buf) < self.size():
             raise ValueError('Not enough bytes to unpack.')
 
-        self._value = struct.unpack_from(self._fmt(), buf, offset)[0]
+        self._value = struct.unpack_from(self._fmt(), buf, 0)[0]
 
         return self.size()
 

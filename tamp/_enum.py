@@ -78,9 +78,9 @@ class Enum(DataType, metaclass=_EnumMeta):
 
         self._value = new_value
 
-    def unpack(self, buf, offset=0):
+    def unpack(self, buf):
         unpack_type = self._type_()
-        consumed = unpack_type.unpack(buf, offset)
+        consumed = unpack_type.unpack(buf)
         self._value = self._enum_(unpack_type.value)
 
         return consumed
