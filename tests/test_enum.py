@@ -110,6 +110,13 @@ class TestEnumWrap(unittest.TestCase):
         for val in unpacked:
             self.assertIsInstance(val, self._TestEnum)
 
+    def test_enum_wrap_reverse_args(self):
+        """
+        One does not simply reverse enum args.
+        """
+        with self.assertRaises(ValueError):
+            EnumWrap(uint8_t, self._TestEnum)()
+
 
 def _test_field_struct(field_type):
     class _test(Structure):

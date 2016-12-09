@@ -1,3 +1,6 @@
+import enum
+import inspect
+
 from ._base import _Type, DataType
 
 __all__ = ['Enum', 'EnumWrap']
@@ -33,6 +36,9 @@ class _EnumMeta(_Type):
 
     @classmethod
     def enum_type(mcs, enum_type, pack_type):
+        if not inspect.isclass(enum_type) or not issubclass(enum_type, enum.Enum):
+            raise ValueError('enum_type must be subclass of enum.Enum.')
+
         return mcs._enum_pack_types[(enum_type, pack_type)]
 
 

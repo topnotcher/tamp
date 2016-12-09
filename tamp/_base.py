@@ -3,6 +3,9 @@ import inspect
 
 class _Type(type): # yo dawg, I heard you like types.types
 
+    def __iter__(cls):
+        yield NotImplemented
+
     def __getitem__(cls, key):
         """
         Allow defining array types: ``uint32_t[5]`` creates a new type.
