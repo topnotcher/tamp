@@ -78,7 +78,7 @@ class Structure(DataType, metaclass=_StructType):
         for field_name, field in self.__dict__['_struct_fields'].items():
             yield field_name, field
 
-    def unpack(self, buf):
+    def _unpack(self, buf):
         offset = 0
         total_consumed_bytes = 0
 
@@ -215,7 +215,7 @@ class Const(DataType):
         if new_value != self._value:
             raise TypeError('Constant')
 
-    def unpack(self, buf):
+    def _unpack(self, buf):
         value = buf[:len(self._bytes_value)]
 
         if value != self._bytes_value:
@@ -271,7 +271,7 @@ class Computed(DataType):
         self.pack_field.value = self.callback()
         return self.pack_field.value
 
-    def unpack(self, buf):
+    def _unpack(self, buf):
         return self.pack_field.unpack(buf)
 
     def pack(self):

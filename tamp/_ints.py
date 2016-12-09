@@ -44,7 +44,7 @@ class _Int(DataType, metaclass=_IntType):
     def _fmt(cls):
         return cls._endian_ + cls._fmt_
 
-    def unpack(self, buf):
+    def _unpack(self, buf):
         if len(buf) < self.size():
             raise ValueError('Not enough bytes to unpack.')
 

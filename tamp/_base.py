@@ -52,6 +52,9 @@ class DataType(metaclass=_Type):
         unpack bytes from the given ``buf`` into ``self.value``. ``ValueError``
         should be raised if too few bytes are given.
         """
+        return self._unpack(buf)
+
+    def _unpack(self, buf):
         raise NotImplementedError
 
     def pack(self):
@@ -117,12 +120,7 @@ class _Array(DataType):
 
             values.append(elem.value)
 
-        return total_consumed_bytes, values
-
-    def unpack(self, buf):
-        total_consumed_bytes, values = self._unpack(buf)
         self._check_length(values)
-
         self._value = values
 
         return total_consumed_bytes
