@@ -91,6 +91,27 @@ class Structure(DataType, metaclass=_StructType):
 
         return total_consumed_bytes
 
+    def unpack_stream(self, stream):
+        first_field = stream.pop_state(self)
+        if first_field is None:
+            skip = False
+        else:
+            skip = True
+
+        for field_name, field in self._iter_fields():
+            if skip and field is first_field:
+                skip = False
+
+            if not skip:
+                result = field.unpack_stream(stream)
+
+                if not result:
+                    stream.push_state(self, field)
+                    return False
+
+        self._unpacked()
+        return True
+
     def pack(self):
         return bytes(self)
 
@@ -223,6 +244,13 @@ class Const(DataType):
 
         return len(self._bytes_value)
 
+    def unpack_stream(self, stream):
+        if len(stream) < len(self._bytes_value):
+            return False
+        else:
+            self._unpack(stream.read(len(self._bytes_value)))
+            return True
+
     def pack(self):
         return self._bytes_value
 
@@ -273,6 +301,9 @@ class Computed(DataType):
 
     def _unpack(self, buf):
         return self.pack_field.unpack(buf)
+
+    def unpack_stream(self, stream):
+        return self.pack_field.unpack_stream(stream)
 
     def pack(self):
         self.pack_field.value = self.callback()

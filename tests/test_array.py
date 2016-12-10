@@ -26,7 +26,6 @@ class TestArray(unittest.TestCase):
         bytes.
         """
         array = self.array_type()
-
         # try to unpack too little data - must fail.
         with self.assertRaises(ValueError):
             array.from_bytes(self.expected_packed[:-1])
@@ -260,6 +259,45 @@ class TestArray(unittest.TestCase):
 
         self.assertEqual(s.data, [[0x09, 0x07], [0x12, 0x34], [0xff, 0x00]])
 
+    def test_fixed_array_pack_unpack_stream(self):
+        """
+        A fixed length array can unapck from a stream.
+        """
+        field_type = uint8_t[2]
+
+        stream = StreamUnpacker(uint8_t[2])
+        packed = bytes(uint8_t[4](value=[1, 2, 3, 4]))
+
+        values = []
+        for byte in (packed[i : i + 1] for i in range(len(packed))):
+            values.extend(stream.unpack(byte))
+
+        self.assertEqual(values, [[1, 2], [3, 4]])
+
+    def test_length_field_array_pack_unpack_stream(self):
+        """
+        """
+        class _test(Structure):
+            _fields_ = [
+                ('len', uint8_t),
+                ('data', uint8_t[LengthField('len')])
+            ]
+
+        packed = struct.pack('BBBBB', 5, 0, 1, 2, 3)
+
+        stream = StreamUnpacker(_test)
+
+        values = []
+        for byte in (packed[i : i + 1] for i in range(len(packed))):
+            values.extend(stream.unpack(byte))
+
+        self.assertEqual(len(values), 0)
+        values.extend(stream.unpack(b'\x04'))
+        self.assertEqual(len(values), 1)
+
+        self.assertEqual(values[0].len, 5)
+        self.assertEqual(values[0].data, [0, 1, 2, 3, 4])
+
     # def test_array_length_field_pack(self):
     #     """
     #     An array's length can be determined from a struct field.
@@ -320,6 +358,19 @@ class PackedLengthTests(unittest.TestCase):
         self.assertEqual(s.dsize, self.dsize)
         self.assertEqual(s.inner.data, self.data)
         self.assertEqual(s.end, self.end)
+
+    def test_unpack_stream(self):
+        """
+        A PackedLength field can unpack from a stream.
+        """
+        s = self.s
+        s.unpack(self.dsize_packed + self.data_packed + self.end_packed)
+
+        stream = StreamUnpacker(type(s))
+
+        self.assertEqual(0, len(list(stream.unpack(self.dsize_packed))))
+        self.assertEqual(0, len(list(stream.unpack(self.data_packed))))
+        self.assertEqual(s, next(stream.unpack(self.end_packed)))
 
     def test_packed_length_updates(self):
         """

@@ -52,6 +52,14 @@ class _Int(DataType, metaclass=_IntType):
 
         return self.size()
 
+    def unpack_stream(self, stream):
+        if len(stream) < self.size():
+            return False
+
+        else:
+            self._unpack(stream.read(self.size()))
+            return True
+
     def pack(self):
         return struct.pack(self._fmt(), self._value)
 

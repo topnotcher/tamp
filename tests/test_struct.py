@@ -161,6 +161,36 @@ class TestStruct(unittest.TestCase):
         s.unpack(b'\x08')
         self.assertEqual(s.test, 3)
 
+    def test_unpack_stream(self):
+        """
+        A struct can unpack from a stream.
+        """
+        class _foo(Structure):
+            _fields_ = [
+                ('baz', uint8_t),
+            ]
+
+        class _bar(Structure):
+            _fields_ = [
+                ('a', uint8_t),
+                ('b', int8_t[2]),
+                ('c', _foo),
+            ]
+
+        s = _bar()
+        s.a = 1
+        s.b = [-1, -2]
+        s.c.baz = 6
+        packed = bytes(s)
+
+        stream = StreamUnpacker(_bar)
+
+        values = []
+        for byte in (packed[i : i + 1] for i in range(len(packed))):
+            values.extend(stream.unpack(byte))
+
+        self.assertEqual([s], values)
+
 
 class ConstFieldTests(unittest.TestCase):
     def test_const_bytes_unpack(self):
@@ -171,6 +201,19 @@ class ConstFieldTests(unittest.TestCase):
         s.from_bytes(b'12345')
 
         self.assertEqual(s.test, b'12345')
+
+    def test_const_bytes_unpack_stream(self):
+        """
+        Const bytes can unpack from a stream.
+        """
+        s = _test_field_struct(Const(b'12345'))
+        stream = StreamUnpacker(s.__class__)
+
+        values = []
+        for b in b'12345':
+            values.extend(stream.unpack(bytes([b])))
+
+        self.assertEqual(values[0], s)
 
     def test_const_field_type_unpack(self):
         """
@@ -284,7 +327,18 @@ class ComputedFieldTests(unittest.TestCase):
         """
         A computed field unpacks without error when the values match.
         """
-        self.s.unpack(b'\x05\x06\x00')
+
+    def test_computed_unpack_stream(self):
+        """
+        A computed field unpacks without error from a stream when the values match
+        """
+        self.s.bar = 5
+
+        stream = StreamUnpacker(type(self.s))
+
+        self.assertIsNone(stream.unpack_one(b'\x05'))
+        self.assertIsNone(stream.unpack_one(b'\x06'))
+        self.assertEqual(self.s, stream.unpack_one(b'\x00'))
 
     def test_computed_unpack_invalid_default(self):
         """

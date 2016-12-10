@@ -28,6 +28,9 @@ class _LengthFieldWrapper(DataType):
     def size(self):
         return self.field.size()
 
+    def unpack_stream(self, stream):
+        return self.field.unpack_stream(stream)
+
 
 @array_type
 class LengthField(_Array):
@@ -38,7 +41,7 @@ class LengthField(_Array):
         _Array.__init__(self, *args, **kwargs)  # TODO
         # TODO: validate the length field, hijack the field and make it read only
 
-    def unpack_more(self, values, consumed, buf, offset):
+    def unpack_more(self, values):
         return len(values) < self.field.value
 
     @DataType.value.setter
@@ -81,6 +84,9 @@ class _PackedLengthFieldWrapper(DataType):
     def _unpack(self, buf):
         return self.length_field.unpack(buf)
 
+    def unpack_stream(self, stream):
+        return self.length_field.unpack_stream(stream)
+
     def pack(self):
         self._update_length()
         return self.length_field.pack()
@@ -122,6 +128,21 @@ class PackedLength(DataType):
             raise ValueError('Expected to unpack %d bytes; unpacked %d.' % (unpack_size, consumed))
 
         return unpack_size
+
+    def unpack_stream(self, stream):
+        unpack_size = self.length_field.value
+        value = stream.pop_state(self, b'')
+
+        remaining = unpack_size - len(value)
+
+        value += stream.read(min(len(stream), remaining))
+
+        if len(value) < unpack_size:
+            stream.push_state(self, value)
+            return False
+        else:
+            self.wrapped_field.unpack(value)
+            return True
 
     def pack(self):
         return self.wrapped_field.pack()

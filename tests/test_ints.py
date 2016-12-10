@@ -26,6 +26,7 @@ class TestIntTypes(unittest.TestCase):
 
             self._test_int_bounds(test_type, bits, signed)
             self._test_int_pack_unpack(test_type, bits, fmt)
+            self._test_int_unpack_stream(test_type)
             self._test_int_size(test_type, bits)
 
         self.assertEqual(getattr(field_type, 'le'), field_type)
@@ -98,6 +99,16 @@ class TestIntTypes(unittest.TestCase):
         # from_bytes should insist on consuming all that it is given
         with self.assertRaises(ValueError, msg='%s did not raise ValueError when given too many bytes to unpack.'):
             field.from_bytes(expected_pack + b'\x13')
+
+    def _test_int_unpack_stream(self, field_type):
+        stream = StreamUnpacker(field_type)
+        packed = bytes(field_type[2](value=[1, 2]))
+
+        values = []
+        for byte in (packed[i : i + 1] for i in range(len(packed))):
+            values.extend(stream.unpack(byte))
+
+        self.assertEqual(values, [1, 2])
 
     def _test_int_size(self, field_type, bits):
         """

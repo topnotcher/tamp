@@ -57,6 +57,9 @@ class DataType(metaclass=_Type):
     def _unpack(self, buf):
         raise NotImplementedError
 
+    def unpack_stream(self, stream):
+        raise NotImplementedError
+
     def pack(self):
         """
         :param value: value to pack
@@ -103,7 +106,7 @@ class _Array(DataType):
         self.elem_type = elem_type
         super(_Array, self).__init__(*args, **kwargs)
 
-    def unpack_more(self, values, consumed, buf, offset):
+    def unpack_more(self, values):
         raise NotImplementedError
 
     def _unpack(self, buf):
@@ -113,7 +116,7 @@ class _Array(DataType):
         total_consumed_bytes = 0
         values = []
 
-        while self.unpack_more(values, total_consumed_bytes, buf, offset) and offset < len(buf):
+        while self.unpack_more(values) and offset < len(buf):
             consumed_bytes = elem.unpack(buf[offset:])
             offset += consumed_bytes
             total_consumed_bytes += consumed_bytes
@@ -124,6 +127,34 @@ class _Array(DataType):
         self._value = values
 
         return total_consumed_bytes
+
+    def unpack_stream(self, stream):
+        state = stream.pop_state(self)
+
+        if state:
+            elem, values = state
+        else:
+            elem = self.elem_type()
+            values = []
+
+        unpack_more = True
+        result = True
+        while unpack_more and result:
+            result = elem.unpack_stream(stream)
+
+            if result:
+                values.append(elem.value)
+                unpack_more = self.unpack_more(values)
+            else:
+                unpack_more = True
+
+        if unpack_more:
+            stream.push_state(self, (elem, values))
+            return False
+        else:
+            self._check_length(values)
+            self._value = values
+            return True
 
     def _check_length(self, value):
         raise NotImplementedError
@@ -141,7 +172,7 @@ class LengthFixed(_Array):
         self._length = length
         _Array.__init__(self, *args, **kwargs)  # TODO
 
-    def unpack_more(self, values, consumed, buf, offset):
+    def unpack_more(self, values):
         # 0 => variable length member: consume all the bytes.
         return (len(values) < self._length) or (self._length == 0)
 
