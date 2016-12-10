@@ -1,6 +1,3 @@
-import enum
-
-
 class StreamUnpacker:
     def __init__(self, unpack_type):
         self.unpack_type = unpack_type

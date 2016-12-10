@@ -2,9 +2,16 @@ import inspect
 import functools
 from collections import OrderedDict
 
+try:
+    import enum
+except ImportError:
+    import enum34 as enum
+
+
 from ._base import _Type, DataType
 
 __all__ = ['Structure', 'Const', 'Computed']
+
 
 class _StructType(_Type):
     def __new__(mcs, name, bases, attrs):
