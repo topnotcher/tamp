@@ -140,3 +140,13 @@ class BytesTests(unittest.TestCase):
         Byte arrays pack to ... bytes.
         """
         self.assertEqual(bytes(Byte[5](value=b'12345')), b'12345')
+
+    def test_bytes_size(self):
+        """
+        The size of a Byte array is the number of bytes.
+        """
+        # Where applicable: the size is actually a function of the Array length
+        # type (LengthField, LengthFixed), etc... but those sometimes defer to
+        # ArrayType
+        self.assertEqual(Byte[5]().size(), 5)
+        self.assertEqual(Byte[0]().size(), 0)
