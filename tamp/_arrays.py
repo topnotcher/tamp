@@ -44,12 +44,9 @@ class LengthField(_Array):
     def unpack_more(self, values):
         return len(values) < self.field.value
 
-    @DataType.value.setter
+    @_Array.value.setter
     def value(self, new_value):
-        if new_value is None:
-            new_value = []
-
-        self._value = new_value
+        self._value = self.array_type(new_value)
         self.field.value = len(self._value)
 
     def size(self):
