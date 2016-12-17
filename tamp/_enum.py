@@ -85,6 +85,16 @@ class Enum(DataType, metaclass=_EnumMeta):
 
         return consumed
 
+    def unpack_stream(self, stream):
+        elem = stream.pop_state(self) or self._type_()
+
+        if elem.unpack_stream(stream):
+            self._value = self._enum_(elem.value)
+            return True
+        else:
+            stream.push_state(self, elem)
+            return False
+
     def pack(self):
         return bytes(self._type_(self._value))
 

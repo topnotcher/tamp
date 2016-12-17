@@ -97,7 +97,7 @@ class TestEnumWrap(unittest.TestCase):
         """
         class _test(Structure):
             _fields_ = [
-                ('test', EnumWrap(self._TestEnum, uint32_t)[2])
+                ('test', EnumWrap(self._TestEnum, uint32_t)[2]),
             ]
 
         s = _test()
@@ -109,6 +109,20 @@ class TestEnumWrap(unittest.TestCase):
 
         for val in unpacked:
             self.assertIsInstance(val, self._TestEnum)
+
+    def test_enum_unpack_stream(self):
+        """
+        An enum can unpack from a stream.
+        """
+        packed = b'\x01\x00\x00\x00\x02\x00\x00\x00'
+        # stream = StreamUnpacker(self._test_struct(EnumWrap(self._TestEnum, uint32_t)))
+        stream = StreamUnpacker(EnumWrap(self._TestEnum, uint32_t))
+
+        values = []
+        for byte in (packed[i : i + 1] for i in range(len(packed))):
+            values.extend(e.value for e in stream.unpack(byte))
+
+        self.assertEqual(values, [self._TestEnum.foo, self._TestEnum.bar])
 
     def test_enum_wrap_reverse_args(self):
         """
