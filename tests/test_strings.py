@@ -116,3 +116,21 @@ class BytesTests(unittest.TestCase):
             values.extend(stream.unpack(byte))
 
         self.assertEqual(values, [b'12', b'34', b'56'])
+
+    def test_bytes_init_ints(self):
+        """
+        A byte array can be initialized from a list of ints - just like
+        bytes!
+        """
+        self.assertEqual(Byte[5](value=[1, 2, 3, 4, 5]).value, b'\x01\x02\x03\x04\x05')
+
+        b = Byte[5]()
+        b.value = [1, 2, 3, 4, 5]
+        self.assertEqual(b.value, b'\x01\x02\x03\x04\x05')
+
+    def test_bytes_init_invalid(self):
+        """
+        A Byte array raises ``TypeError`` when given an invalid value.
+        """
+        with self.assertRaises(TypeError):
+            Byte[5](value=1)

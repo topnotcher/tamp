@@ -12,11 +12,10 @@ class String(_ArrayType):
 
     def init(self, length, value):
         if value is not None:
-            if not isinstance(value, self.string_type):
-                raise TypeError('value %d must be instance of %s, not %s: %r' %
-                                (id(self), self.string_type.__name__, type(value).__name__, value))
-            else:
+            if isinstance(value, self.string_type):
                 self._value = value
+            else:
+                self._value = self.string_type().join(self.elem_type(value=elem_value).value for elem_value in value)
 
         elif length is not None:
             # TODO: this is kind of fucked up, eh?
