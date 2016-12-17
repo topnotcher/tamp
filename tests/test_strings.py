@@ -134,3 +134,9 @@ class BytesTests(unittest.TestCase):
         """
         with self.assertRaises(TypeError):
             Byte[5](value=1)
+
+    def test_bytes_pack(self):
+        """
+        Byte arrays pack to ... bytes.
+        """
+        self.assertEqual(bytes(Byte[5](value=b'12345')), b'12345')

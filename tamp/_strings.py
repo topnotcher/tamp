@@ -43,7 +43,7 @@ class String(_ArrayType):
         return result
 
     def __bytes__(self):
-        return self._string_type().join(bytes(self.elem_type(value=value)) for value in self._value)
+        return self.string_type().join(bytes(self.elem_type(value=value)) for value in self._value)
 
     def size(self):
         return len(bytes(self))
