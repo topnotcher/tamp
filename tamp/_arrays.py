@@ -1,6 +1,6 @@
 import functools
 
-from ._base import DataType, array_type, _Array, LengthFixed
+from ._base import DataType, array_type, _Array, LengthFixed, _ArrayType
 from ._struct import wrap_type
 
 
